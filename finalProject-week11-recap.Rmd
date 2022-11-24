@@ -132,8 +132,19 @@ dfPartial$schoolYear |> unique()
 dfPartial |> names()
 ```
 
+```{r save-log}
+# create data/ folder before you run the command
+saveRDS(project, file="data/project.Rds") 
+```
 
 ### Summary
+
+```{r read-log}
+rm(list=ls())
+project = readRDS("data/project.Rds")
+project$data$dfPartial$value -> dfPartial
+```
+
 
 For relevant features, 
 
