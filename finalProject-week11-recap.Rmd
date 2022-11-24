@@ -1,0 +1,155 @@
+---
+title: "Final project"
+date: "The Date"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, include = TRUE)
+```
+
+## Data 
+
+  * log (for progress tracking purpose)
+  
+```{r}
+project = list()
+```
+  
+
+
+```{r}
+# import data
+library(readr)
+enrollmentRate_department <- read_csv("data/學12-1.新生註冊率-以「系所」統計.csv")
+
+# log 
+project$data$enrollmentRate_department = list(
+  value=enrollmentRate_department,
+  description="enrollmentRate_department",
+  source="https://data.gov.tw/dataset/26228"
+)
+```
+
+
+### Checking
+
+  * rename
+  
+```{r}
+names(enrollmentRate_department)[c(1,2,5,7,8,10:14)]
+
+names(enrollmentRate_department)[c(1,2,5,7,8,10:14)] <-  # notice 10:14
+  c("schoolYear", "typeByFundingSource","school", "department","day_night", 
+  "freshmenFresh","freshmenOld","freshmenFreshRegistered",
+  "foreignStudentsRegistered", "netFreshmenRegistrationRate")
+
+dfPartial = enrollmentRate_department[c(1,2,5,7,8,10:14)]
+```
+
+```{r}
+dplyr::glimpse(dfPartial)
+```
+
+  * wrong class?
+
+```{r}
+library(magrittr)
+dplyr::glimpse(dfPartial)
+names(dfPartial)
+```
+
+
+```{r}
+factorPos = c(2,3,4,5)
+dfPartial[[factorPos[[1]]]] %<>% factor()
+dfPartial[[factorPos[[2]]]] %<>% factor()
+dfPartial[[factorPos[[3]]]] %<>% factor()
+dfPartial[[factorPos[[4]]]] %<>% factor()
+
+numPos = c(9)
+dfPartial[[numPos]] %<>% as.numeric()
+```
+
+```{r}
+dplyr::glimpse(dfPartial)
+```
+
+```{r}
+# log
+project$data$dfPartial$value <- dfPartial
+```
+
+  * (For foreign students) Translate element values from Chinese to English (method here only works on factor class)
+```{r}
+levels(dfPartial$typeByFundingSource)
+# change to English
+levels(dfPartial$typeByFundingSource) <- c("public", "private")
+levels(dfPartial$typeByFundingSource)
+
+levels(dfPartial$day_night)
+levels(dfPartial$day_night) <- c("part-time","day","night")
+levels(dfPartial$day_night)
+```
+
+```{r log-dfPartial}
+# log
+project$data$dfPartial = list(
+  value=dfPartial,
+  description="dfPartial",
+  source="enrollmentRate_department"
+)
+```
+
+
+### Description
+
+Introduce your data.
+```{r}
+project$data$dfPartial$value |>
+  dplyr::glimpse()
+```
+
+
+  * source: the data is from `r project$data$enrollmentRate_department$source`.
+  
+  * entity unit: a university program, like 國立政治大學教育學系日間部 is one entity. In total, there are 6,345 different programs.
+```{r}
+unique(dfPartial[c("school", "department", "day_night")])
+```
+
+  
+  * sample size: Each program is tracked from school year 106 (western calendar year 2017) to 110 (2021) -- if the program existed at the time. In total, there 42,900 obs.
+
+```{r}
+dfPartial$schoolYear |> unique()
+```
+
+  
+  * feature number: Each observation has the following features recorded.
+
+```{r}
+dfPartial |> names()
+```
+
+
+### Summary
+
+For relevant features, 
+
+  * any NA? How many as in percentage of the sample size? 
+
+  * Distribution:
+  
+    * Discrete data: prop.table
+    
+    * Continuous data: range, mean, standard deviation
+    
+## Exploration
+
+Any other things you discover in the data
+
+
+## Conclusion
+
+

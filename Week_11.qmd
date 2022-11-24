@@ -1,0 +1,337 @@
+---
+jupyter: ir
+---
+
+
+  Today's goals:
+  
+  * learn to import .csv data
+
+  * change feature names of a dataframe
+
+  * learn **class** and its difference from **type**
+
+  * what does parsing do?
+
+  * how to fix wrong classes? 
+
+  * check NA
+
+  * factor class summary
+
+
+# University registration rate
+
+Aging society: too many schools, too little students. What's the current enrollment rate in each university in Taiwan
+
+## Data
+
+  * [Open data](https://data.gov.tw/)
+
+    * <https://data.gov.tw/dataset/26228>
+
+### Format
+
+Data is like a spreadsheet. When we imported, we imported as a special list stucture called **Data Frame** which is a collection of data following
+
+  * feature-by-feature structure
+
+  * each feature is an **ATOMIC** vector (Within a feature, element values are all of the same type.)
+
+  * feature vectors have the same length, which is equal to the number of observations (觀測值個數), also called sample size (樣本數）。
+
+### Import .csv data
+
+  * source: <https://udb.moe.edu.tw/download/udata/data_gov/學生類/學12-1.新生註冊率-以「系所」統計.csv>
+
+     * as an url: `"https://udb.moe.edu.tw/download/udata/data_gov/學生類/學12-1.新生註冊率-以「系所」統計.csv"`
+
+     * as a local file: `"./data/學生類/學12-1.新生註冊率-以「系所」統計.csv"`
+
+
+### Import to global environment
+
+We need data be bound to an object in the global environment for us to use.
+
+```
+enrollmentRate_department <- ...
+```
+
+   * csv
+
+In **Environment** tab, click **Import Dataset** > **From Text (readr)**, show
+
+Copy the code from **Code Preview**.
+
+```{r}
+library(readr)
+enrollmentRate_department <- read_csv("data/學12-1.新生註冊率-以「系所」統計.csv")
+# View(enrollmentRate_department)
+```
+
+## Preliminary Exploration
+
+
+### the basics
+
+  * data source:
+
+  * sample size
+
+  * features
+
+  * entiry unit of an observation
+
+```{r}
+# sample size
+nrow(enrollmentRate_department) 
+# feature numbers
+ncol(enrollmentRate_department)
+# feature names
+names(enrollmentRate_department)
+
+```
+
+```{r}
+library(dplyr) # package to deal with dataframe.
+
+dplyr::glimpse(enrollmentRate_department)
+```
+
+The entity unit is one university's degree program. Each program's frenshmen enrollment rate is tracked through several **school years**.
+
+
+### renames features
+
+Names not following regular pattern can make your program typing difficult. It is common that we change it to some easy-to-call name.
+
+
+```{r}
+names(enrollmentRate_department)
+```
+
+ [1] "學年度"                                               
+ [2] "設立別"                                               
+ [3] "學校類別"                                             
+ [4] "學校統計處代碼"                                       
+ [5] "學校名稱"                                             
+ [6] "系所代碼"                                             
+ [7] "系所名稱"                                             
+ [8] "日間/進修"                                            
+ [9] "學制班別"                                             
+[10] "當學年度總量內核定新生招生名額(A)"                    
+[11] "當學年度新生保留入學資格人數(B)"                      
+[12] "當學年度總量內新生招生核定名額之實際註冊人數(C)"      
+[13] "當學年度各學系境外(新生)學生實際註冊人數 (E)"         
+[14] "當學年度新生註冊率(%)\n \n D=〔(C+E)/(A-B+E)〕＊100％"
+
+```{r}
+names(enrollmentRate_department)[c(1,2,5,7,8,10:14)]
+
+names(enrollmentRate_department)[c(1,2,5,7,8,10:14)] <-  # notice 10:14
+  c("schoolYear", "typeByFundingSource","school", "department","day_night", 
+  "freshmenFresh","freshmenOld","freshmenFreshRegistered",
+  "foreignStudentsRegistered", "netFreshmenRegistrationRate")
+```
+
+NA
+
+"111" - the person's not home.
+"999" - the person reject to answer.
+
+## Checking
+
+### Class
+
+  * class determine how much computer understand the data, and therefore what can computer do to it.
+
+
+```{r}
+class("2022-12-31")
+typeof("2022-12-31")
+
+class(TRUE)
+typeof(TRUE)
+
+class(2)
+typeof(2)
+```
+
+```{r}
+string2 <- lubridate::ymd("2022-12-31")
+print(string2) 
+class(string2)
+string2+lubridate::days(3)
+```
+
+```{r}
+string1 <- "2022-12-31"
+print(string1)
+class(string1)
+string1+lubridate::days(3) # computer does not know what to do
+```
+
+### Are feature [classes](https://tpemartin.github.io/NTPU-R-for-Data-Science-EN/operations-on-atomic-vectors.html#class) appropriate. 
+```{r}
+head(enrollmentRate_department)
+length(enrollmentRate_department$day_night)
+unique(enrollmentRate_department$day_night)
+```
+
+  * categorical data: very few categories repetitively show in the data.
+
+```{r}
+enrollmentRate_department$day_night <- factor(enrollmentRate_department$day_night) 
+```
+
+```{r}
+class(enrollmentRate_department$day_night)
+```
+
+
+```{r}
+class(enrollmentRate_department$schoolYear)
+class(enrollmentRate_department$netFreshmenRegistrationRate)
+```
+
+```{r}
+# Since **schoolYear** is consider numeric by computer
+# computer accept the following (non-sense) operation
+enrollmentRate_department$schoolYear /3  
+
+```
+
+```{r}
+enrollmentRate_department$schoolYear <- factor(enrollmentRate_department$schoolYear, ordered = TRUE)
+enrollmentRate_department$schoolYear / 3 # Computer know it's non-sense
+```
+
+   * ordered factor: freshmen < sophomore < junior < senior; low income < middle income < high income
+   
+   * un-ordered factor: male  female, red, blue, orange
+
+```{r}
+class(enrollmentRate_department$schoolYear) # 4.2.2
+enrollmentRate_department$schoolYear
+```
+
+
+```{r}
+c(106, 106, 108, 110, 107, 109, 108)
+```
+
+```{r}
+c(1, 1, 3, 5, 2, 4, 3)
+mapping 1-5 => 106 - 110
+```
+
+
+> `factor()` and `lubridate::ymd()` are parsing functions that teach computer the meaning of human words (stored as string,  numeric)
+
+> Value that is not parsed is consider having its class as its type.
+
+### classes
+
+  * factor class: parsing `factor()` or `as.factor()`
+
+  * date class: parsing `as.Date()` or `lubridate::ymd()` and others depend on stored date/time string type.
+
+```{r}
+dfPartial = enrollmentRate_department[c("schoolYear", "typeByFundingSource","school", "department","day_night", 
+  "freshmenFresh","freshmenOld","freshmenFreshRegistered",
+  "foreignStudentsRegistered", "netFreshmenRegistrationRate")] 
+  
+head(dfPartial)
+dplyr::glimpse(dfPartial)
+dfPartial |> dplyr::glimpse()
+```
+
+```{r}
+f(x, y, z)
+
+x |> f(y, z)
+```
+
+
+>  pipe operator `|>`
+
+```
+value |> doThis() #closer to human words
+```
+is the same as 
+```
+doThis(value)
+```
+
+### fix classes
+
+```{r}
+dfPartial$typeByFundingSource |> factor() -> dfPartial$typeByFundingSource
+
+# the same as 
+library(magrittr)
+dfPartial$typeByFundingSource %<>% factor() 
+
+dfPartial$department %<>% factor()
+dfPartial$day_night %<>% factor()
+
+dplyr::glimpse(dfPartial)
+```
+
+## Summarise data
+
+  * Discrete data: 1L, 2L,3L, 4L; categorical data
+
+    * How many categories?
+
+    * It's distribution.
+
+
+  * Continuous data:
+
+    * Central tendency (e.g. mean) , dispersion (e.g. standard deviation).
+
+
+  * NA  
+
+### NA
+
+  * Any NA?
+
+```{r}
+# check each feature
+dfPartial[[1]] |> anyNA()
+dfPartial[[2]] |> anyNA()
+
+# Actually should check all before individual checking
+dfPartial |> anyNA()
+```
+
+## Discrete data
+
+
+### Factor
+
+#### Levels
+
+```{r}
+levels(dfPartial$typeByFundingSource)
+
+# change to English
+levels(dfPartial$typeByFundingSource) <- c("public", "private")
+```
+
+```{r}
+levels(dfPartial$typeByFundingSource)
+
+tb <- table(dfPartial$typeByFundingSource)
+tb
+prop.table(tb) # shows the distribution
+```
+
+```{r}
+dfPartial$typeByFundingSource |>
+  table() |>
+  prop.table()
+```
+
