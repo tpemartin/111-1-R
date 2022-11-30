@@ -1,0 +1,367 @@
+---
+title: "Final project"
+date: "The Date"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, include = TRUE)
+```
+
+## Data
+
+-   log (for progress tracking purpose)
+
+```{r}
+project = list()
+```
+
+```{r}
+# import data
+library(readr)
+enrollmentRate_department <- read_csv("data/學12-1.新生註冊率-以「系所」統計.csv")
+
+# log 
+project$data$enrollmentRate_department = list(
+  value=enrollmentRate_department,
+  description="enrollmentRate_department",
+  source="https://data.gov.tw/dataset/26228"
+)
+```
+
+### Checking
+
+-   rename
+
+```{r}
+names(enrollmentRate_department)[c(1,2,5,7,8,10:14)]
+
+names(enrollmentRate_department)[c(1,2,5,7,8,10:14)] <-  # notice 10:14
+  c("schoolYear", "typeByFundingSource","school", "department","day_night", 
+  "freshmenFresh","freshmenOld","freshmenFreshRegistered",
+  "foreignStudentsRegistered", "netFreshmenRegistrationRate")
+
+dfPartial = enrollmentRate_department[c(1,2,5,7,8,10:14)]
+```
+
+```{r}
+dplyr::glimpse(dfPartial)
+```
+
+-   wrong class?
+
+```{r}
+library(magrittr)
+dplyr::glimpse(dfPartial)
+names(dfPartial)
+```
+
+```{r correct classes}
+# elements 2 3 4 5 should be factor
+factorPos = c(2,3,4,5)
+dfPartial[[factorPos[[1]]]] %<>% factor()
+dfPartial[[factorPos[[2]]]] %<>% factor()
+dfPartial[[factorPos[[3]]]] %<>% factor()
+dfPartial[[factorPos[[4]]]] %<>% factor()
+
+# element 9 should be numeric
+numPos = c(9)
+dfPartial[[numPos]] %<>% as.numeric()
+```
+
+```{r}
+dplyr::glimpse(dfPartial)
+```
+
+```{r log dfPartial}
+# log
+project$data$dfPartial$value <- dfPartial
+```
+
+-   (For foreign students) Translate element values from Chinese to English (method here only works on factor class)
+
+```{r do the magic trick on levels}
+levels(dfPartial$typeByFundingSource)
+# change to English
+levels(dfPartial$typeByFundingSource) <- c("public", "private")
+levels(dfPartial$typeByFundingSource)
+
+levels(dfPartial$day_night)
+levels(dfPartial$day_night) <- c("part-time","day","night")
+levels(dfPartial$day_night)
+```
+
+```{r log dfPartial again}
+# log
+project$data$dfPartial = list(
+  value=dfPartial,
+  description="dfPartial",
+  source="enrollmentRate_department"
+)
+```
+
+### Description
+
+Introduce your data.
+
+> Before we start, we rename features to English and keep only those we need for the next-step analysis. We also did the levels-swapping trick to translate Chinese element values into English quickly. A thorough class check was done as well. Wrong classes have been fixed.
+
+-   data source and entity.
+
+> The data is from Taiwan government open data platform. Each data entity is one tertiary education (高等教育）program. Each observation represents a certain program's freshmen registration rate.
+
+```{r}
+project$data$enrollmentRate_department$source |>
+  browseURL()
+```
+
+> The data consists totaly 42,900 observations with 10 features
+
+```{r}
+project$data$dfPartial$value |>
+  dplyr::glimpse()
+```
+
+> Among those features, each entity can be distinguished by the following four features:
+
+```{r}
+names(project$data$dfPartial$value)[c(2:5)]
+```
+
+> For one example, the following programing is from a **public** university named **國立政治大學** under department **教育學系** for **day** time bachelor degress.
+
+```{r}
+project$data$dfPartial$value[c(2:5)][1,]
+```
+
+> Totally there are 8,290 different programs.
+
+```{r}
+project$data$dfPartial$value[c(2:5)] |> unique()
+```
+
+> Each program was tracked from school year 106 (western calendar year 2017) to 110 (2021) -- if the program existed at the time.
+
+```{r}
+dfPartial = project$data$dfPartial$value
+dfPartial$schoolYear |> unique()
+```
+
+```{r save-log}
+# create data/ folder before you run the command
+saveRDS(project, file="data/project.Rds") 
+```
+
+> Short summary: The data covers 8,290 tertiary educational programs from 2017 (school year 106) to 2021 (110) with total observations of 42,900 and ten features.
+
+```{r save data 1}
+saveRDS(project, file="data/project.Rds")
+```
+
+### Summary
+
+```{r read data}
+rm(list=ls()) # clean up global environment, emulate a new start of analysis on the next day
+project = readRDS("data/project.Rds")
+project$data$dfPartial$value -> dfPartial
+```
+
+For relevant features,
+
+-   any NA? How many as in percentage of the sample size?
+
+> We first check if there is any NA.
+
+```{r}
+anyNA(dfPartial)
+```
+
+> Since there is NA, we dig deeper into each feature to know how many NAs are in each feature.
+
+```{r}
+is.na(dfPartial$schoolYear)
+```
+
+The returned is a logical atomic vector. A logical vector will be interpreted as an integer vector with 1 = TRUE and 0 = FALSE if such a numerical interpretation is needed.
+
+```{r}
+is.na(dfPartial$schoolYear) |> sum() # shows the total number of TRUEs which is the total number of NAs
+```
+
+```{r}
+dfPartial$typeByFundingSource |> is.na() |> sum()
+dfPartial$school |> is.na() |> sum()
+
+dplyr::glimpse(dfPartial)
+dfPartial$foreignStudentsRegistered |> is.na() |> sum()
+```
+
+------------------------------------------------------------------------
+
+#### Function help
+
+::: {.alert .alert-info}
+Put your cursor at any place of `is.na` phrase and hit **F1.** It will bring up the help manual of `is.na` function.
+
+A typical help statement consists of
+
+-   Usage
+
+-   Arguments
+
+    -   A function's input(s).
+
+-   Value
+
+    -   A function's return when called.
+
+Here `is.na(x)` is one of the usage, which is what we did here with `x=dfPartial[[1]]` .
+:::
+
+::: {.alert .alert-info}
+Sometimes the same function reacts different depends on argument's class, like `is.na`. It is stated under usage
+
+    ## S3 method for class 'data.frame'
+:::
+
+#### Dataframe and matrix
+
+<!--# 4.2.4 -->
+
+When we construct data set feature by feature, like
+
+```{r}
+data_fbf = list(
+  name=c('John', 'Mary', "Ken", NA),
+  income=c(100, NA, NA, 20),
+  bloodType=c("AB", "B",NA,"O")
+)
+```
+
+R will treat it as a list. R does NOT know:
+
+-   It is feature by feature.
+
+-   all features are of the same length.
+
+-   each feature is an atomic vector.
+
+The knowledge of the above structure is classified under **data.frame** class. To teach R it is a dataframe, we need to parse it:
+
+```{r}
+class(data_fbf)
+data_fbf2 = as.data.frame(data_fbf)
+class(data_fbf2)
+```
+
+To save time, you can construct a data.frame class dataset use:
+
+```{r}
+data_fbf2 = data.frame(
+  name=c('John', 'Mary', "Ken", NA),
+  income=c(100, NA, NA, 20),
+  bloodType=c("AB", "B",NA,"O")
+)
+```
+
+so long as **all features are of the same length** and **each feature is an atomic vector**.
+
+If R knows an object is a dataframe, R will:
+
+```{r}
+# print name call as a spreadsheet
+data_fbf2
+
+# extends [ ] to two dimensions
+data_fbf2[2, ] # retrieve the second row
+data_fbf2[c(1,4), ] # retrieve the 1st and 4th rows
+data_fbf2[, 1] # retrieve the 1st feature column
+data_fbf2[,c("name")] # retrieve the column element based on element name "name"
+data_fbf2[,c("name", "bloodType")]
+data_fbf2[2, c("name", "bloodType")]
+
+
+# the above retrieve can not work on a list
+data_fbf[, c("name", "bloodType")]
+```
+
+::: {.alert .alert-warning}
+Teaching R to understand your object is extremely important before you start to analyze your data.
+:::
+
+<!--# 4.2.5 -->
+
+Another class, Matrix,
+
+```{r}
+a = c(1, 2, 3,
+    4, 7, 8,
+    12, 3, 9,
+    11, -2, -3)
+a
+class(a)
+```
+
+```{r}
+aMat = matrix(
+  c(1, 2, 3,
+    4, 7, 8,
+    12, 3, 9,
+    11, -2, -3),
+  ncol=3, byrow = T
+)
+aMat
+class(aMat)
+```
+
+$$
+\left[
+\begin{array}{ccc}
+1 & 2 & 3 \\
+4 & 7 & 8\\
+12 & 3 & 9\\
+11 & -2 & -3
+\end{array}
+\right]
+$$
+
+::: {.alert .alert-info}
+Ignore this one. For teacher only,
+
+<https://www.overleaf.com/latex/templates/a-quick-guide-to-latex/fghqpfgnxggz.pdf>
+:::
+
+```{r}
+aMat[, 1] # the 1st column
+aMat[c(2,3), ] # the 2nd and 3rd rows
+```
+
+------------------------------------------------------------------------
+
+#### is.na on dataframe
+
+Give you a matrix of logical values corresponds to each value in your dataframe:
+
+```{r}
+# a matrix of logical
+isNaMat = is.na(dfPartial)
+head(isNaMat)
+```
+
+`sum` gives you TRUE counts; `table` gives you both TRUE counts and FALSE counts; When passing `table` further to `prop.table` , it gives you the proportions of TRUE and FALSE in your observations
+
+> Based on the feature foreignStudentsRegistered, there are 26,028 observations that have no foreign students registered (from sum, and table), and 16,872 obs that have foreign students registered. The former accounts for around 61 percent of the data and the latter accounts for 39 percent.
+
+```{r}
+# For a column
+isNaMat[,c("foreignStudentsRegistered")] |> sum() # how many NAs
+isNaMat[,c("foreignStudentsRegistered")] |> table() # how many obs in each category
+isNaMat[,c("foreignStudentsRegistered")] |> table() -> tbx
+prop.table(tbx) # in terms of percentage
+```
+
+## Exploration
+
+Any other things you discover in the data
+
+## Conclusion

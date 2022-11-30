@@ -60,13 +60,15 @@ names(dfPartial)
 ```
 
 
-```{r}
+```{r correct classes}
+# elements 2 3 4 5 should be factor
 factorPos = c(2,3,4,5)
 dfPartial[[factorPos[[1]]]] %<>% factor()
 dfPartial[[factorPos[[2]]]] %<>% factor()
 dfPartial[[factorPos[[3]]]] %<>% factor()
 dfPartial[[factorPos[[4]]]] %<>% factor()
 
+# element 9 should be numeric
 numPos = c(9)
 dfPartial[[numPos]] %<>% as.numeric()
 ```
@@ -75,13 +77,13 @@ dfPartial[[numPos]] %<>% as.numeric()
 dplyr::glimpse(dfPartial)
 ```
 
-```{r}
+```{r log dfPartial}
 # log
 project$data$dfPartial$value <- dfPartial
 ```
 
   * (For foreign students) Translate element values from Chinese to English (method here only works on factor class)
-```{r}
+```{r do the magic trick on levels}
 levels(dfPartial$typeByFundingSource)
 # change to English
 levels(dfPartial$typeByFundingSource) <- c("public", "private")
@@ -92,7 +94,7 @@ levels(dfPartial$day_night) <- c("part-time","day","night")
 levels(dfPartial$day_night)
 ```
 
-```{r log-dfPartial}
+```{r log dfPartial again}
 # log
 project$data$dfPartial = list(
   value=dfPartial,
@@ -105,31 +107,47 @@ project$data$dfPartial = list(
 ### Description
 
 Introduce your data.
+
+> Before we start, we rename features to English and keep only those we need for the next-step analysis. We also did the levels-swapping trick to translate Chinese element values into English quickly. A thorough class check was done as well. Wrong classes have been fixed.
+
+  * data source and entity.
+  
+> The data is from Taiwan government open data platform. Each data entity is one tertiary education (高等教育）program. Each observation represents a certain program's freshmen registration rate.
+
+```{r}
+project$data$enrollmentRate_department$source |>
+  browseURL()
+```
+
+> The data consists totaly 42,900 observations with 10 features
+
 ```{r}
 project$data$dfPartial$value |>
   dplyr::glimpse()
 ```
 
+> Among those features, each entity can be distinguished by the following four features: 
 
-  * source: the data is from `r project$data$enrollmentRate_department$source`.
-  
-  * entity unit: a university program, like 國立政治大學教育學系日間部 is one entity. In total, there are 6,345 different programs.
 ```{r}
-unique(dfPartial[c("school", "department", "day_night")])
+names(project$data$dfPartial$value)[c(2:5)]
+```
+> For one example, the following programing is from a **public** university named **國立政治大學** under department **教育學系** for **day** time bachelor degress.
+
+```{r}
+project$data$dfPartial$value[c(2:5)][1,]
 ```
 
-  
-  * sample size: Each program is tracked from school year 106 (western calendar year 2017) to 110 (2021) -- if the program existed at the time. In total, there 42,900 obs.
+> Totally there are 8,290 different programs.
 
 ```{r}
+project$data$dfPartial$value[c(2:5)] |> unique()
+```
+
+> Each program was tracked from  school year 106 (western calendar year 2017) to 110 (2021) -- if the program existed at the time.
+
+```{r}
+dfPartial = project$data$dfPartial$value
 dfPartial$schoolYear |> unique()
-```
-
-  
-  * feature number: Each observation has the following features recorded.
-
-```{r}
-dfPartial |> names()
 ```
 
 ```{r save-log}
@@ -137,10 +155,18 @@ dfPartial |> names()
 saveRDS(project, file="data/project.Rds") 
 ```
 
+> Short summary:
+> The data covers 8,290 tertiary educational programs from 2017 (school year 106) to 2021 (110) with total observations of 42,900 and ten features.
+
+```{r save data 1}
+saveRDS(project, file="data/project.Rds")
+```
+
+
 ### Summary
 
-```{r read-log}
-rm(list=ls())
+```{r read data}
+rm(list=ls()) # clean up global environment, emulate a new start of analysis on the next day
 project = readRDS("data/project.Rds")
 project$data$dfPartial$value -> dfPartial
 ```
